@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String
+  role         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  bookings     Booking[]
+  doctorProfile Doctor?       @relation("DoctorAccount")
+  prescriptions Prescription[] @relation("PrescriptionCreator")
+  doctorReviews DoctorReview[] @relation("DoctorReviewCreator")
+}
+
+model Hospital {
+  id        String    @id
+  name      String    @unique
+  lat       Float
+  lng       Float
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  doctors   Doctor[]
+  rooms     Room[]
+  bookings  Booking[]
+}
+
+model Doctor {
+  id         String    @id
+  hospitalId String
+  userId     String?   @unique
+  name       String
+  specialty  String
+  available  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  hospital   Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+  user       User?     @relation("DoctorAccount", fields: [userId], references: [id], onDelete: SetNull)
+  bookings   Booking[]
+  roomAvailabilities DoctorRoomAvailability[]
+}
+
+model Room {
+  id         String    @id
+  hospitalId String
+  name       String
+  type       String
+  available  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  hospital   Hospital  @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+  bookings   Booking[]
+  doctorAvailabilities DoctorRoomAvailability[]
+}
+
+model DoctorRoomAvailability {
+  doctorId   String
+  roomId     String
+  available  Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  doctor     Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, roomId])
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  // userId diisi jika booking dibuat oleh akun user biasa.
+  // Untuk pasien walk-in yang didaftarkan admin, kolom ini boleh kosong.
+  userId      String?
+  patientName String
+  patientAge  Int?
+  hospitalId  String
+  doctorId    String
+  roomId      String
+  complaint   String
+  status      String
+  queueNumber Int
+  etaMinutes  Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  hospital    Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+  doctor      Doctor        @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  room        Room          @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  prescription Prescription?
+  doctorReview DoctorReview?
+}
+
+model Prescription {
+  id              String   @id @default(cuid())
+  bookingId       String   @unique
+  stage           String
+  itemsJson       String
+  notes           String?
+  createdAt       DateTime @default(now())
+  createdByUserId String
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdByUser   User     @relation("PrescriptionCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+}
+
+model DoctorReview {
+  id              String   @id @default(cuid())
+  bookingId        String   @unique
+  symptoms         String
+  diagnosis        String
+  estimatedCost    Int
+  healthAdvice     String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdByUserId  String
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  createdByUser    User     @relation("DoctorReviewCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+}

@@ -1,72 +1,125 @@
-# Library API
+# Diabstrok API
 
-Project ini adalah aplikasi NestJS sederhana untuk sistem perpustakaan dengan:
+Backend NestJS untuk sistem booking pasien Diabstrok dengan Prisma, JWT bearer token, Swagger, dan seed data lokal.
 
-- `Controller`, `Service`, dan `Repository`
-- mock database menggunakan array biasa
-- DTO + validasi request
-- dokumentasi Swagger di `/api`
-- middleware logging request
+## Checklist yang tercakup
 
-## Menjalankan project
+- Inisialisasi backend dan arsitektur folder modular
+- Schema database untuk `users`, `hospitals`, `doctors`, `rooms`, `doctor_room_availabilities`, `bookings`, `prescriptions`, dan `doctor_reviews`
+- Auth `register/login/me` berbasis JWT
+- CRUD utama untuk resource booking
+- Seed data untuk integrasi frontend, Swagger, dan Postman
+- Validation pipe, guards, middleware logger, dan global exception filters
+- E2E test backend dengan seeded sample data
+
+## Stack
+
+- NestJS
+- Prisma ORM
+- PostgreSQL untuk development dan deployment
+- JWT authentication
+- Swagger di `/api`
+
+## Struktur utama
+
+- `prisma/schema.prisma`
+- `prisma/seed.ts`
+- `src/modules/auth`
+- `src/modules/users`
+- `src/modules/hospitals`
+- `src/modules/doctors`
+- `src/modules/rooms`
+- `src/modules/bookings`
+- `src/common`
+- `test/app.e2e-spec.ts`
+
+## Menjalankan backend
 
 ```bash
 npm install
+npm run prisma:generate
+npm run prisma:push
+npm run prisma:seed
 npm run start:dev
 ```
 
-App default berjalan di `http://localhost:3000`.
-Swagger tersedia di `http://localhost:3000/api`.
+Server berjalan di `http://localhost:3001`.
+Swagger tersedia di `http://localhost:3001/api`.
 
-## Struktur fitur
-
-- `src/modules/library/library.controller.ts`
-- `src/modules/library/library.service.ts`
-- `src/modules/library/library.repository.ts`
-- `src/modules/library/dto`
-- `src/modules/library/entities`
-
-## Endpoint utama
-
-- `GET /books` ambil semua buku
-- `GET /books/:id` ambil detail buku
-- `POST /books` tambah buku
-- `PATCH /books/:id` update buku
-- `POST /books/:id/borrow` pinjam buku
-- `POST /books/:id/return` kembalikan buku
-- `DELETE /books/:id` hapus buku
-
-## Query filter
-
-Endpoint `GET /books` mendukung query berikut:
-
-- `category`
-- `author`
-- `isBorrowed`
-
-Contoh:
+## Environment
 
 ```bash
-GET /books?category=Novel
-GET /books?author=Andrea
-GET /books?isBorrowed=true
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/diabstrok?schema=public"
+JWT_SECRET="diabstrok-super-secret"
+PORT=3001
+FRONTEND_URL="http://localhost:3000"
 ```
 
-## Contoh request tambah buku
+`FRONTEND_URL` dapat diisi lebih dari satu origin dengan format dipisah koma.
 
-```json
-{
-  "title": "Filosofi Teras",
-  "author": "Henry Manampiring",
-  "category": "Self Improvement",
-  "publishedYear": 2018
-}
-```
+## Seed credentials
+
+- Admin: `admin@diabstrok.id` / `admin1234`
+- Doctor: `siti@diabstrok.id` / `doctor1234`
+- User: `rina@diabstrok.id` / `user1234`
+
+## Endpoint penting
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me`
+- `GET /hospitals`
+- `GET /doctors`
+- `PATCH /doctors/:id/availability`
+- `GET /rooms`
+- `PATCH /doctors/:doctorId/rooms/:roomId/availability`
+- `PATCH /rooms/:id/availability`
+- `POST /bookings`
+- `GET /bookings/me`
+- `GET /bookings`
+- `GET /bookings/:id`
+- `PATCH /bookings/:id`
+- `PATCH /bookings/:id/status`
+- `DELETE /bookings/:id`
+- `POST /bookings/:id/prescription`
+- `POST /bookings/:id/doctor-review`
 
 ## Testing
 
 ```bash
+npm run build
 npm run test
-npm run test:e2e
-npm run lint
+npm run test:e2e -- --runInBand
+npm run test:cov
 ```
+
+## Unit Testing dan Coverage
+
+Coverage backend dilaporkan oleh Jest ke folder `coverage/` dengan reporter
+`text`, `text-summary`, `json-summary`, dan `lcov`.
+
+Snapshot coverage BE terbaru:
+
+- Statements: `84.14%`
+- Branches: `71.36%`
+- Functions: `77.35%`
+- Lines: `83.21%`
+
+Scope coverage backend saat ini difokuskan pada unit yang paling penting untuk
+keamanan, validasi, dan alur bisnis:
+
+- `src/common/**/*`
+- `src/modules/auth/**/*`
+- `src/modules/bookings/bookings.controller.ts`
+- `src/modules/bookings/bookings.service.ts`
+
+## Deploy readiness
+
+Project ini sudah disiapkan agar mudah dibawa ke cloud:
+
+- `Dockerfile` tersedia untuk container build
+- CORS membaca `FRONTEND_URL`
+- Auth memakai JWT secret dari environment
+- Port membaca `PORT`
+
+Untuk production, arahkan `DATABASE_URL` ke instance PostgreSQL yang persisten.

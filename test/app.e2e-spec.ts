@@ -1,10 +1,17 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { PrismaClient } from '@prisma/client';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
-import { Book } from './../src/modules/library/entities/book.entity';
-import { setupApp } from './../src/setup-app';
+import {
+  Role,
+  RoomType,
+  Specialty,
+} from '../src/common/enums/domain.enums';
+import { hashPassword } from '../src/common/security/password.util';
+import { AppModule } from '../src/app.module';
+import { createPrismaAdapter } from '../src/prisma/prisma.adapter';
+import { setupApp } from '../src/setup-app';
 
 type SwaggerDocumentResponse = {
   info: {
@@ -13,10 +20,83 @@ type SwaggerDocumentResponse = {
   paths: Record<string, unknown>;
 };
 
-describe('AppController (e2e)', () => {
+describe('Diabstrok API (e2e)', () => {
   let app: INestApplication<App>;
+  let prisma: PrismaClient;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
+    // Test memakai adapter PostgreSQL yang sama dengan runtime backend.
+    prisma = new PrismaClient({
+      adapter: createPrismaAdapter(),
+    });
+
+    await prisma.$connect();
+    await prisma.doctorRoomAvailability.deleteMany();
+    await prisma.doctorReview.deleteMany();
+    await prisma.prescription.deleteMany();
+    await prisma.booking.deleteMany();
+    await prisma.room.deleteMany();
+    await prisma.doctor.deleteMany();
+    await prisma.hospital.deleteMany();
+    await prisma.user.deleteMany();
+
+    await prisma.user.create({
+      data: {
+        name: 'Admin Diabstrok',
+        email: 'admin@diabstrok.id',
+        password: await hashPassword('admin1234'),
+        role: Role.ADMIN,
+      },
+    });
+
+    await prisma.user.create({
+      data: {
+        name: 'Rina Diabstrok',
+        email: 'rina@diabstrok.id',
+        password: await hashPassword('user1234'),
+        role: Role.USER,
+      },
+    });
+
+    const doctorUser = await prisma.user.create({
+      data: {
+        name: 'dr. Siti Rahma',
+        email: 'siti@diabstrok.id',
+        password: await hashPassword('doctor1234'),
+        role: Role.DOCTOR,
+      },
+    });
+
+    await prisma.hospital.create({
+      data: {
+        id: 'thb',
+        name: 'RS Taman Harapan Baru',
+        lat: -6.1978,
+        lng: 107.0024,
+      },
+    });
+
+    await prisma.doctor.create({
+      data: {
+        id: 'd2',
+        hospitalId: 'thb',
+        userId: doctorUser.id,
+        name: 'dr. Siti Rahma',
+        specialty: Specialty.DIABETES,
+        available: true,
+      },
+    });
+
+    await prisma.room.create({
+      data: {
+        id: 'r1',
+        hospitalId: 'thb',
+        name: 'VIP 01',
+        type: RoomType.VIP,
+        available: true,
+      },
+    });
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -26,56 +106,43 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
+  afterAll(async () => {
+    await app.close();
+    await prisma.$disconnect();
+  });
+
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect({
+        name: 'Diabstrok API',
+        status: 'ok',
+        docs: '/api',
+      });
   });
 
-  it('/books (GET)', () => {
-    return request(app.getHttpServer()).get('/books').expect(200);
-  });
-
-  it('/books returns 10 seeded books (GET)', async () => {
+  it('/auth/login (POST)', async () => {
     const response = await request(app.getHttpServer())
-      .get('/books')
-      .expect(200);
-    const body = response.body as Book[];
-
-    expect(body).toHaveLength(10);
-  });
-
-  it('/books?title=Laskar (GET)', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/books?title=Laskar')
-      .expect(200);
-    const body = response.body as Book[];
-
-    expect(body).toHaveLength(1);
-    expect(body[0].title).toBe('Laskar Pelangi');
-  });
-
-  it('/books/:id/borrow (POST)', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/books/1/borrow')
-      .send({ borrowerName: 'Budi' })
+      .post('/auth/login')
+      .send({
+        email: 'admin@diabstrok.id',
+        password: 'admin1234',
+      })
       .expect(201);
-    const body = response.body as Book;
 
-    expect(body.isBorrowed).toBe(true);
-    expect(body.borrowerName).toBe('Budi');
+    expect(response.body.accessToken).toEqual(expect.any(String));
+    expect(response.body.tokenType).toBe('Bearer');
+    expect(response.body.user.email).toBe('admin@diabstrok.id');
   });
 
-  it('/books/:id (DELETE)', async () => {
+  it('/hospitals (GET)', async () => {
     const response = await request(app.getHttpServer())
-      .delete('/books/1')
+      .get('/hospitals')
       .expect(200);
-    const body = response.body as Book;
 
-    expect(body.id).toBe(1);
-
-    await request(app.getHttpServer()).get('/books/1').expect(404);
+    expect(response.body.items).toHaveLength(1);
+    expect(response.body.items[0].id).toBe('thb');
   });
 
   it('/api-json (GET)', async () => {
@@ -84,8 +151,8 @@ describe('AppController (e2e)', () => {
       .expect(200);
     const body = response.body as SwaggerDocumentResponse;
 
-    expect(body.info.title).toBe('Library API');
-    expect(body.paths['/books']).toBeDefined();
-    expect(body.paths['/books/{id}']).toBeDefined();
+    expect(body.info.title).toBe('Diabstrok API');
+    expect(body.paths['/auth/login']).toBeDefined();
+    expect(body.paths['/bookings']).toBeDefined();
   });
 });
