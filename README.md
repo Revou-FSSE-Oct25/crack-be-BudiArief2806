@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-# Diabstrok API
+# Diabstrok API Budi Arief 
 
 Backend NestJS untuk sistem booking pasien Diabstrok dengan Prisma, JWT bearer token, Swagger, dan seed data lokal.
 
@@ -15,11 +14,15 @@ Backend NestJS untuk sistem booking pasien Diabstrok dengan Prisma, JWT bearer t
 
 ## Stack
 
-- NestJS
-- Prisma ORM
-- PostgreSQL untuk development dan deployment
-- JWT authentication
+- NestJS : karena framework ini modular, terstruktur, dan sangat cocok untuk aplikasi backend yang memiliki banyak role, banyak endpoint, dan membutuhkan autentikasi JWT serta validasi data yang rapi.
+- Prisma ORM : Prisma mempermudah pengelolaan database PostgreSQL, memberikan type safety di TypeScript, dan sangat membantu dalam membangun relasi data serta endpoint CRUD secara lebih cepat dan terstruktur.
+- PostgreSQL dan Dbeaver untuk development dan deployment
+  <img width="1407" height="798" alt="image" src="https://github.com/user-attachments/assets/45be7397-7c8d-4ba9-ac22-30ac53c44840" />
+- JWT authentication (sebagai Bodyguard dirumah kita )
+  <img width="632" height="237" alt="image" src="https://github.com/user-attachments/assets/91d1e1f3-f3da-473c-a86e-6e2354eed977" />
 - Swagger di `/api`
+- <img width="1915" height="374" alt="image" src="https://github.com/user-attachments/assets/9f1966ef-e639-482c-8b6e-db07c7437f02" />
+
 
 ## Struktur utama
 
@@ -56,13 +59,6 @@ PORT=3001
 FRONTEND_URL="http://localhost:3000"
 ```
 
-`FRONTEND_URL` dapat diisi lebih dari satu origin dengan format dipisah koma.
-
-## Seed credentials
-
-- Admin: `admin@diabstrok.id` / `admin1234`
-- Doctor: `siti@diabstrok.id` / `doctor1234`
-- User: `rina@diabstrok.id` / `user1234`
 
 ## Endpoint penting
 
@@ -92,12 +88,13 @@ npm run build
 npm run test
 npm run test:e2e -- --runInBand
 npm run test:cov
+Dockerfile : deploy backend ke render
+docker-compose.yml : cara menjalankan backend dan database bersama-sama
 ```
 
 ## Unit Testing dan Coverage
 
-Coverage backend dilaporkan oleh Jest ke folder `coverage/` dengan reporter
-`text`, `text-summary`, `json-summary`, dan `lcov`.
+<img width="868" height="620" alt="image" src="https://github.com/user-attachments/assets/cd17936f-d964-46a7-ac4a-c05c0386696b" />
 
 Snapshot coverage BE terbaru:
 
@@ -127,3 +124,8 @@ Untuk production, arahkan `DATABASE_URL` ke instance PostgreSQL yang persisten.
 =======
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/rF-k97Bx)
 >>>>>>> 4da661f43b239ee54785beb9f20a79719ee4f0d7
+
+## Deploy Link FE : https://crack-fe-budiarief2806-2.onrender.com/
+## Deploy Link Endpoint & BE: https://crack-be-budiarief2806-2.onrender.com/api#/bookings/BookingsController_update
+## Deploy Link Dokter : https://crack-be-budiarief2806-2.onrender.com/doctors
+## Deploy link hospital : https://crack-be-budiarief2806-2.onrender.com/hospitals
