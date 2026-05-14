@@ -5,12 +5,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
+ARG DATABASE_URL
+
 COPY . .
-RUN npm run prisma:generate
+RUN DATABASE_URL=$DATABASE_URL npm run prisma:generate
 RUN npm run build
 
-ENV PORT=3001
-
-EXPOSE 3001
+EXPOSE 10000
 
 CMD ["npm", "run", "start:prod"]
