@@ -21,6 +21,7 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import type { PublicUser } from '../users/entities/user.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreateBookingMessageDto } from './dto/create-booking-message.dto';
 import { CreateDoctorReviewDto } from './dto/create-doctor-review.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
@@ -68,6 +69,16 @@ export class BookingsController {
     return this.bookingsService.findOne(id, user);
   }
 
+  @Get(':id/messages')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'List chat messages for a booking' })
+  async findMessages(
+    @Param('id', NonEmptyStringPipe) id: string,
+    @CurrentUser() user: PublicUser,
+  ) {
+    return this.bookingsService.findMessages(id, user);
+  }
+
   @Patch(':id')
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Update a booking' })
@@ -77,6 +88,17 @@ export class BookingsController {
     @Body() dto: UpdateBookingDto,
   ) {
     return this.bookingsService.update(id, user, dto);
+  }
+
+  @Post(':id/messages')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Send a chat message for a booking' })
+  async createMessage(
+    @Param('id', NonEmptyStringPipe) id: string,
+    @CurrentUser() user: PublicUser,
+    @Body() dto: CreateBookingMessageDto,
+  ) {
+    return this.bookingsService.createMessage(id, user, dto);
   }
 
   // Mengubah status booking, misalnya dari PENDING ke CONFIRMED.

@@ -19,6 +19,7 @@ model User {
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
   bookings                 Booking[]
+  bookingMessages          BookingMessage[]
   doctorProfile            Doctor?        @relation("DoctorAccount")
   prescriptions            Prescription[] @relation("PrescriptionCreator")
   doctorReviews            DoctorReview[] @relation("DoctorReviewCreator")
@@ -98,6 +99,20 @@ model Booking {
   room        Room          @relation(fields: [roomId], references: [id], onDelete: Restrict)
   prescription Prescription?
   doctorReview DoctorReview?
+  messages     BookingMessage[]
+}
+
+model BookingMessage {
+  id           String   @id @default(cuid())
+  bookingId     String
+  senderUserId  String
+  message       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  senderUser    User     @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
 }
 
 model Prescription {

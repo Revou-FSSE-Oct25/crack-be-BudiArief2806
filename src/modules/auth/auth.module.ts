@@ -1,6 +1,6 @@
 // Module auth yang merangkai controller, service, repository, dan guard auth.
 // Semua kebutuhan fitur autentikasi dikelompokkan di sini.
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -12,7 +12,7 @@ import { AuthGuard } from './guards/auth.guard';
   // Auth membutuhkan akses ke UsersModule
   // untuk membuat user baru dan membaca data user saat login.
   imports: [
-    UsersModule,
+    forwardRef(() => UsersModule),
     JwtModule.register({
       secret: process.env.JWT_SECRET ?? 'diabstrok-super-secret',
       signOptions: {

@@ -1,12 +1,16 @@
 // Service dokter untuk filter data dokter berdasarkan rumah sakit atau spesialis.
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Specialty } from '../../common/enums/domain.enums';
+import { PrismaService } from '../../prisma/prisma.service';
 import { DoctorEntity, DoctorView } from './entities/doctor.entity';
 import { DoctorsRepository } from './doctors.repository';
 
 @Injectable()
 export class DoctorsService {
-  constructor(private readonly doctorsRepository: DoctorsRepository) {}
+  constructor(
+    private readonly doctorsRepository: DoctorsRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async findAll(filters?: {
     hospitalId?: string;
@@ -49,6 +53,47 @@ export class DoctorsService {
     }
 
     return doctor;
+  }
+
+  async deleteDoctor(id: string): Promise<DoctorView> {
+    const doctorView = await this.findById(id);
+    const doctor = await this.prisma.doctor.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true },
+        },
+        _count: {
+          select: {
+            bookings: true,
+          },
+        },
+      },
+    });
+
+    if (!doctor) {
+      throw new NotFoundException('Doctor not found');
+    }
+
+    if (doctor._count.bookings > 0) {
+      throw new ConflictException(
+        'Doctor cannot be deleted while bookings still reference this doctor',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.doctor.delete({
+        where: { id },
+      });
+
+      if (doctor.user?.id) {
+        await tx.user.delete({
+          where: { id: doctor.user.id },
+        });
+      }
+    });
+
+    return doctorView;
   }
 
   private isSameHospital(left: string, right: string): boolean {

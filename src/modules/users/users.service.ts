@@ -172,6 +172,31 @@ export class UsersService {
     return this.toPublicUser(this.sanitizeUser(user));
   }
 
+  async deleteUser(id: string): Promise<PublicUser> {
+    const user = await this.findEntityById(id);
+
+    if (user.role === Role.ADMIN) {
+      throw new ConflictException('Admin account cannot be deleted here');
+    }
+
+    if (user.role === Role.DOCTOR || user.doctorId) {
+      throw new ConflictException(
+        'Doctor accounts must be deleted via the doctor endpoint',
+      );
+    }
+
+    const deletedUser = await this.prisma.user.delete({
+      where: { id },
+      include: {
+        doctorProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    return this.toPublicUser(this.sanitizeUser(deletedUser));
+  }
+
   toPublicUser(user: UserEntity): PublicUser {
     const sanitizedUser = this.sanitizeUser(user);
 

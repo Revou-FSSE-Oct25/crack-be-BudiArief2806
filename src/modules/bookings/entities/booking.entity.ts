@@ -32,6 +32,26 @@ export class DoctorReviewEntity {
   createdBy!: 'doctor';
 }
 
+export class BookingMessageEntity {
+  id!: string;
+
+  bookingId!: string;
+
+  senderUserId!: string;
+
+  senderRole!: 'admin' | 'doctor' | 'user';
+
+  senderName!: string;
+
+  senderEmail!: string;
+
+  message!: string;
+
+  createdAt!: string;
+
+  updatedAt!: string;
+}
+
 export class BookingEntity {
   id!: string;
 

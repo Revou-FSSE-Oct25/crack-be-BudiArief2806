@@ -3,6 +3,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -57,6 +58,16 @@ export class DoctorsController {
   ) {
     return {
       item: await this.doctorsService.updateAvailability(id, dto.available),
+    };
+  }
+
+  @Delete(':id')
+  @UseGuards(AuthGuard, AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete doctor and linked doctor account by ID' })
+  async remove(@Param('id', NonEmptyStringPipe) id: string) {
+    return {
+      item: await this.doctorsService.deleteDoctor(id),
     };
   }
 }

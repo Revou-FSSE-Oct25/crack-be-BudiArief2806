@@ -6,12 +6,13 @@ import { AuthModule } from '../auth/auth.module';
 import { DoctorsModule } from '../doctors/doctors.module';
 import { HospitalsModule } from '../hospitals/hospitals.module';
 import { RoomsModule } from '../rooms/rooms.module';
+import { RealtimeModule } from '../../realtime/realtime.module';
 import { BookingsController } from './bookings.controller';
 import { BookingsRepository } from './bookings.repository';
 import { BookingsService } from './bookings.service';
 
 @Module({
-  imports: [AuthModule, HospitalsModule, DoctorsModule, RoomsModule],
+  imports: [AuthModule, HospitalsModule, DoctorsModule, RoomsModule, RealtimeModule],
   controllers: [BookingsController],
   providers: [BookingsRepository, BookingsService],
   exports: [BookingsRepository, BookingsService],

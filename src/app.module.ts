@@ -21,6 +21,7 @@ import { HospitalsModule } from './modules/hospitals/hospitals.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 // AppModule adalah root module, yaitu pintu masuk utama seluruh susunan aplikasi.
 // Dari sini NestJS tahu module, controller, dan provider apa saja yang perlu dimuat.
@@ -33,6 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DoctorsModule,
     RoomsModule,
     BookingsModule,
+    RealtimeModule,
   ],
 
   // Controller yang berada di lingkup AppModule.

@@ -14,12 +14,14 @@ import { DoctorsService } from '../doctors/doctors.service';
 import { HospitalsService } from '../hospitals/hospitals.service';
 import { RoomsService } from '../rooms/rooms.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreateBookingMessageDto } from './dto/create-booking-message.dto';
 import { CreateDoctorReviewDto } from './dto/create-doctor-review.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { UpdateBookingStatusDto } from './dto/update-booking-status.dto';
 import { BookingsRepository } from './bookings.repository';
 import { BookingEntity } from './entities/booking.entity';
+import { RealtimeGateway } from '../../realtime/realtime.gateway';
 
 @Injectable()
 export class BookingsService {
@@ -28,6 +30,7 @@ export class BookingsService {
     private readonly hospitalsService: HospitalsService,
     private readonly doctorsService: DoctorsService,
     private readonly roomsService: RoomsService,
+    private readonly realtimeGateway: RealtimeGateway,
   ) {}
 
   async create(user: PublicUser, dto: CreateBookingDto) {
@@ -88,13 +91,17 @@ export class BookingsService {
       etaMinutes,
     });
 
+    const bookingView = this.toBookingView(booking, {
+      hospital,
+      room,
+      queueNumber,
+      etaMinutes,
+    });
+
+    this.realtimeGateway.broadcastBookingUpdated(bookingView, 'created');
+
     return {
-      item: this.toBookingView(booking, {
-        hospital,
-        room,
-        queueNumber,
-        etaMinutes,
-      }),
+      item: bookingView,
     };
   }
 
@@ -134,6 +141,14 @@ export class BookingsService {
     const booking = await this.getBookingOrThrow(id);
     this.assertAccess(booking, user);
     return { item: this.toBookingView(booking) };
+  }
+
+  async findMessages(id: string, user: PublicUser) {
+    const booking = await this.getBookingOrThrow(id);
+    this.assertAccess(booking, user);
+
+    const messages = await this.bookingsRepository.findMessagesByBookingId(id);
+    return { items: messages };
   }
 
   async update(id: string, user: PublicUser, dto: UpdateBookingDto) {
@@ -192,7 +207,40 @@ export class BookingsService {
       etaMinutes,
     });
 
-    return { item: this.toBookingView(booking) };
+    const bookingView = this.toBookingView(booking);
+    this.realtimeGateway.broadcastBookingUpdated(
+      bookingView,
+      dto.status ? 'status_changed' : 'updated',
+    );
+
+    return { item: bookingView };
+  }
+
+  async createMessage(
+    id: string,
+    user: PublicUser,
+    dto: CreateBookingMessageDto,
+  ) {
+    const booking = await this.getBookingOrThrow(id);
+    this.assertAccess(booking, user);
+    const trimmedMessage = dto.message.trim();
+
+    if (!trimmedMessage) {
+      throw new BadRequestException('Message cannot be empty');
+    }
+
+    const message = await this.bookingsRepository.createMessage({
+      bookingId: booking.id,
+      senderUserId: user.id,
+      message: trimmedMessage,
+    });
+
+    this.realtimeGateway.broadcastBookingMessage({
+      booking: this.toBookingView(booking),
+      message,
+    });
+
+    return { item: message };
   }
 
   async updateStatus(id: string, user: PublicUser, dto: UpdateBookingStatusDto) {
@@ -208,6 +256,11 @@ export class BookingsService {
     this.assertAccess(booking, user);
 
     await this.bookingsRepository.delete(id);
+    this.realtimeGateway.broadcastBookingDeleted({
+      bookingId: booking.id,
+      userId: booking.userId,
+      doctorId: booking.doctorId,
+    });
     return { ok: true };
   }
 
@@ -230,7 +283,10 @@ export class BookingsService {
       createdByUserId: user.id,
     });
 
-    return { item: this.toBookingView(booking) };
+    const bookingView = this.toBookingView(booking);
+    this.realtimeGateway.broadcastBookingUpdated(bookingView, 'prescription_saved');
+
+    return { item: bookingView };
   }
 
   async submitDoctorReview(
@@ -270,7 +326,13 @@ export class BookingsService {
       createdByUserId: user.id,
     });
 
-    return { item: this.toBookingView(updatedBooking) };
+    const bookingView = this.toBookingView(updatedBooking);
+    this.realtimeGateway.broadcastBookingUpdated(
+      bookingView,
+      'doctor_review_submitted',
+    );
+
+    return { item: bookingView };
   }
 
   private async getBookingOrThrow(id: string): Promise<BookingEntity> {

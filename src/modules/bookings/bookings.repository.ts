@@ -7,7 +7,7 @@ import {
   Specialty,
 } from '../../common/enums/domain.enums';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BookingEntity } from './entities/booking.entity';
+import { BookingEntity, BookingMessageEntity } from './entities/booking.entity';
 
 @Injectable()
 export class BookingsRepository {
@@ -104,6 +104,35 @@ export class BookingsRepository {
     await this.prisma.booking.delete({
       where: { id },
     });
+  }
+
+  async findMessagesByBookingId(bookingId: string): Promise<BookingMessageEntity[]> {
+    const messages = await this.prisma.bookingMessage.findMany({
+      where: { bookingId },
+      include: {
+        senderUser: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return messages.map((message) => this.toBookingMessageEntity(message));
+  }
+
+  async createMessage(payload: {
+    bookingId: string;
+    senderUserId: string;
+    message: string;
+  }): Promise<BookingMessageEntity> {
+    const created = await this.prisma.bookingMessage.create({
+      data: payload,
+      include: {
+        senderUser: true,
+      },
+    });
+
+    return this.toBookingMessageEntity(created);
   }
 
   countActiveByHospitalId(hospitalId: string): Promise<number> {
@@ -319,6 +348,33 @@ export class BookingsRepository {
             createdBy: 'doctor',
           }
         : undefined,
+    };
+  }
+
+  private toBookingMessageEntity(message: {
+    id: string;
+    bookingId: string;
+    senderUserId: string;
+    message: string;
+    createdAt: Date;
+    updatedAt: Date;
+    senderUser: {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+    };
+  }): BookingMessageEntity {
+    return {
+      id: message.id,
+      bookingId: message.bookingId,
+      senderUserId: message.senderUserId,
+      senderRole: message.senderUser.role as Role,
+      senderName: message.senderUser.name,
+      senderEmail: message.senderUser.email,
+      message: message.message,
+      createdAt: message.createdAt.toISOString(),
+      updatedAt: message.updatedAt.toISOString(),
     };
   }
 }
