@@ -1,13 +1,14 @@
 // Controller auth.
 // Endpoint di file ini dipakai frontend untuk register, login,
 // dan membaca profil user yang sedang login.
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthGuard } from './guards/auth.guard';
@@ -32,6 +33,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Login and receive a bearer token' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Get('verify-email')
+  @ApiOperation({ summary: 'Verify a user email using a verification token' })
+  verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('google')
+  @ApiOperation({ summary: 'Login or register using a Google ID token' })
+  googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLogin(dto);
   }
 
   // Endpoint me hanya bisa diakses setelah lolos AuthGuard.

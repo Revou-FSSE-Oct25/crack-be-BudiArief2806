@@ -7,17 +7,21 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String
-  email        String        @unique
-  password     String
-  role         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  bookings     Booking[]
-  doctorProfile Doctor?       @relation("DoctorAccount")
-  prescriptions Prescription[] @relation("PrescriptionCreator")
-  doctorReviews DoctorReview[] @relation("DoctorReviewCreator")
+  id                       String         @id @default(cuid())
+  name                     String
+  email                    String         @unique
+  password                 String
+  role                     String
+  emailVerified            Boolean        @default(true)
+  emailVerificationToken   String?        @unique
+  emailVerificationExpiresAt DateTime?
+  googleId                 String?        @unique
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  bookings                 Booking[]
+  doctorProfile            Doctor?        @relation("DoctorAccount")
+  prescriptions            Prescription[] @relation("PrescriptionCreator")
+  doctorReviews            DoctorReview[] @relation("DoctorReviewCreator")
 }
 
 model Hospital {

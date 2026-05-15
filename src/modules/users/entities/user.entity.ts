@@ -11,6 +11,14 @@ export class UserEntity {
 
   role!: Role;
 
+  emailVerified!: boolean;
+
+  emailVerificationToken?: string | null;
+
+  emailVerificationExpiresAt?: Date | null;
+
+  googleId?: string | null;
+
   doctorId?: string;
 
   createdAt!: Date | string;

@@ -45,12 +45,44 @@ export class UsersService {
     return user ? this.sanitizeUser(user) : null;
   }
 
+  async findEntityByVerificationToken(
+    token: string,
+  ): Promise<UserEntity | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { emailVerificationToken: token },
+      include: {
+        doctorProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    return user ? this.sanitizeUser(user) : null;
+  }
+
+  async findEntityByGoogleId(googleId: string): Promise<UserEntity | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { googleId },
+      include: {
+        doctorProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    return user ? this.sanitizeUser(user) : null;
+  }
+
   // Membuat user baru dan simpan ke database.
   async createUser(payload: {
     name: string;
     email: string;
     password: string;
     role?: Role;
+    emailVerified?: boolean;
+    emailVerificationToken?: string | null;
+    emailVerificationExpiresAt?: Date | null;
+    googleId?: string | null;
   }): Promise<PublicUser> {
     const normalizedEmail = payload.email.trim().toLowerCase();
 
@@ -68,6 +100,72 @@ export class UsersService {
         email: normalizedEmail,
         password: await hashPassword(payload.password.trim()),
         role: payload.role ?? Role.USER,
+        emailVerified: payload.emailVerified ?? true,
+        emailVerificationToken: payload.emailVerificationToken ?? null,
+        emailVerificationExpiresAt:
+          payload.emailVerificationExpiresAt ?? null,
+        googleId: payload.googleId ?? null,
+      },
+    });
+
+    return this.toPublicUser(this.sanitizeUser(user));
+  }
+
+  async verifyEmail(id: string): Promise<PublicUser> {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null,
+      },
+      include: {
+        doctorProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    return this.toPublicUser(this.sanitizeUser(user));
+  }
+
+  async updateEmailVerificationToken(
+    id: string,
+    payload: {
+      emailVerificationToken: string | null;
+      emailVerificationExpiresAt: Date | null;
+    },
+  ): Promise<PublicUser> {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        emailVerificationToken: payload.emailVerificationToken,
+        emailVerificationExpiresAt: payload.emailVerificationExpiresAt,
+      },
+      include: {
+        doctorProfile: {
+          select: { id: true },
+        },
+      },
+    });
+
+    return this.toPublicUser(this.sanitizeUser(user));
+  }
+
+  async updateGoogleIdentity(
+    id: string,
+    payload: { googleId: string; emailVerified?: boolean },
+  ): Promise<PublicUser> {
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        googleId: payload.googleId,
+        emailVerified: payload.emailVerified ?? true,
+      },
+      include: {
+        doctorProfile: {
+          select: { id: true },
+        },
       },
     });
 
@@ -82,6 +180,8 @@ export class UsersService {
       name: sanitizedUser.name,
       email: sanitizedUser.email,
       role: sanitizedUser.role,
+      emailVerified: sanitizedUser.emailVerified,
+      googleId: sanitizedUser.googleId,
       doctorId: sanitizedUser.doctorId,
       createdAt: sanitizedUser.createdAt,
       updatedAt: sanitizedUser.updatedAt,
@@ -89,8 +189,18 @@ export class UsersService {
   }
 
   private sanitizeUser(
-    user: Omit<UserEntity, 'role' | 'doctorId'> & {
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      password: string;
       role: Role | string;
+      emailVerified?: boolean | null;
+      emailVerificationToken?: string | null;
+      emailVerificationExpiresAt?: Date | null;
+      googleId?: string | null;
+      createdAt: Date | string;
+      updatedAt: Date | string;
       doctorId?: string | null;
       doctorProfile?: { id: string } | null;
     },
@@ -101,6 +211,10 @@ export class UsersService {
       email: user.email.trim().toLowerCase(),
       password: user.password,
       role: user.role as Role,
+      emailVerified: user.emailVerified ?? true,
+      emailVerificationToken: user.emailVerificationToken ?? null,
+      emailVerificationExpiresAt: user.emailVerificationExpiresAt ?? null,
+      googleId: user.googleId ?? null,
       doctorId: user.doctorProfile?.id ?? user.doctorId ?? undefined,
     };
   }
