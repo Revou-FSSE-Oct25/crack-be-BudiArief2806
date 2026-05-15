@@ -18,6 +18,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { DoctorsModule } from './modules/doctors/doctors.module';
 import { HospitalsModule } from './modules/hospitals/hospitals.module';
+import { HealthAssistantModule } from './modules/health-assistant/health-assistant.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -31,6 +32,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     UsersModule,
     AuthModule,
     HospitalsModule,
+    HealthAssistantModule,
     DoctorsModule,
     RoomsModule,
     BookingsModule,

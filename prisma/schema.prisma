@@ -20,6 +20,7 @@ model User {
   updatedAt                DateTime       @updatedAt
   bookings                 Booking[]
   bookingMessages          BookingMessage[]
+  healthAssistantMessages  HealthAssistantMessage[]
   doctorProfile            Doctor?        @relation("DoctorAccount")
   prescriptions            Prescription[] @relation("PrescriptionCreator")
   doctorReviews            DoctorReview[] @relation("DoctorReviewCreator")
@@ -113,6 +114,19 @@ model BookingMessage {
   senderUser    User     @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
 
   @@index([bookingId, createdAt])
+}
+
+model HealthAssistantMessage {
+  id         String   @id @default(cuid())
+  userId      String
+  role        String
+  message     String
+  topic       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Prescription {
