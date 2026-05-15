@@ -11,6 +11,7 @@ import { RegisterDto } from './dto/register.dto';
 
 type GoogleTokenInfo = {
   aud?: string;
+  azp?: string;
   email?: string;
   email_verified?: string;
   name?: string;
@@ -185,7 +186,11 @@ export class AuthService {
     }
 
     const expectedClientId = process.env.GOOGLE_CLIENT_ID?.trim();
-    if (expectedClientId && profile.aud !== expectedClientId) {
+    const tokenAudiences = [profile.aud, profile.azp]
+      .map((value) => value?.trim())
+      .filter((value): value is string => Boolean(value));
+
+    if (expectedClientId && !tokenAudiences.includes(expectedClientId)) {
       throw new UnauthorizedException('Google token audience is invalid');
     }
 
