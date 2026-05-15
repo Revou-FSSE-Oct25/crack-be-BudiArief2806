@@ -19,6 +19,13 @@ type GoogleTokenInfo = {
   sub?: string;
 };
 
+function normalizeGoogleClientId(value?: string | null) {
+  return value
+    ?.replace(/["'\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -185,9 +192,9 @@ export class AuthService {
       throw new UnauthorizedException('Google email is not verified');
     }
 
-    const expectedClientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const expectedClientId = normalizeGoogleClientId(process.env.GOOGLE_CLIENT_ID);
     const tokenAudiences = [profile.aud, profile.azp]
-      .map((value) => value?.trim())
+      .map((value) => normalizeGoogleClientId(value))
       .filter((value): value is string => Boolean(value));
 
     if (expectedClientId && !tokenAudiences.includes(expectedClientId)) {
